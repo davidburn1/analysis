@@ -4,19 +4,8 @@ import matplotlib.pyplot as plt
 from lmfit import minimize, Parameters, fit_report, Model
 
 
-def loadXFMRDelayScans(directory, fields, delay, scanIDs):
-	grid = np.zeros((len(fields), len(delay)))
 
-	for i in range(len(fields)):
-		f = h5py.File(directory+"/i10-%06d.nxs" % scanIDs[i], 'r')
-		grp = f['entry1']['instrument']
-		delay = grp['delay']['delay'][:]
-		grid[i,:] = grp['zurich']['x'][:]  
-		f.close()
-
-	return grid
-
-def loadXFMRDelayScans2(directory, fields, delay, scanIDs):
+def loadXFMRDelayScansOld(directory, fields, delay, scanIDs):
 	# improved version which returns a dict
 	data = {}
 	data['field'] = fields
@@ -35,6 +24,86 @@ def loadXFMRDelayScans2(directory, fields, delay, scanIDs):
 		f.close()
 
 	return data
+
+
+def loadXFMRDelayScans(directory, scanIDs):
+	data = {}
+
+	# read the first file to get the length of the delay scan
+	f = h5py.File(directory+"/i10-%06d.nxs" % scanIDs[0], 'r')
+	grp = f['entry1']['instrument']
+	data['delay'] = grp['delay']['delay'][:]
+	f.close()
+
+	data['field'] = np.zeros((len(scanIDs)))
+	data['static'] = np.zeros((len(data['field']), len(data['delay'])))
+	data['x'] = np.zeros((len(data['field']), len(data['delay'])))
+	data['y'] = np.zeros((len(data['field']), len(data['delay'])))
+
+	for i,s in enumerate(scanIDs):
+		f = h5py.File(directory+"/i10-%06d.nxs" % scanIDs[i], 'r')
+		grp = f['entry1']['instrument']
+		data['field'][i] =  f['entry1']['before_scan']['vmag']['field'][()]
+		#delay = grp['delay']['delay'][:]
+		data['static'][i,:] = grp['zurich']['static'][:]
+		data['x'][i,:] = grp['zurich']['x'][:]  
+		data['y'][i,:] = grp['zurich']['y'][:]
+		f.close()
+
+	# sort the data by field value
+	argsort = np.argsort(data['field'])
+	data['field'] = data['field'][argsort]
+	data['static'] = data['static'][argsort,:]
+	data['x'] = data['x'][argsort,:]
+	data['y'] = data['y'][argsort,:]
+
+
+	return data
+
+
+def loadXFMRDelayScans2(directory, scanIDs):
+	""" allow different scans to have different number of points """
+	data = {}
+
+	# read the first file to get the length of the delay scan
+	#f = h5py.File(directory+"/i10-%06d.nxs" % scanIDs[0], 'r')
+	#grp = f['entry1']['instrument']
+	#data['delay'] = grp['delay']['delay'][:]
+	#f.close()
+
+	data['field'] = np.zeros((len(scanIDs)))
+	data['grid'] = np.zeros((len(scanIDs))).tolist()
+	#data['grid'] = [] #np.zeros((len(scanIDs))
+#	data['delay'] = np.zeros((len(scanIDs)))
+#	data['static'] = np.zeros((len(scanIDs)))
+#	data['x'] = np.zeros((len(scanIDs)))
+#	data['y'] = np.zeros((len(scanIDs)))
+
+
+	for i,s in enumerate(scanIDs):
+		f = h5py.File(directory+"/i10-%06d.nxs" % scanIDs[i], 'r')
+		grp = f['entry1']['instrument']
+		d2 = {}
+		d2['delay'] = grp['delay']['delay'][:]
+		d2['static'] = grp['zurich']['static'][:]
+		d2['x'] = grp['zurich']['x'][:]  
+		d2['y'] = grp['zurich']['y'][:]
+
+		data['field'][i] =  f['entry1']['before_scan']['vmag']['field'][()]
+		data['grid'][i] = d2
+		f.close()
+
+	# sort the data by field value
+	argsort = np.argsort(data['field'])
+	print argsort
+	data['field'] = data['field'][argsort]
+	data['grid'] = data['grid'][argsort]
+	#data['static'] = data['static'][argsort,:]
+	#data['x'] = data['x'][argsort,:]
+	#data['y'] = data['y'][argsort,:]
+
+	return data
+
 
 
 
@@ -66,26 +135,6 @@ def load_data(delays, fields, scanIDs):
     return data
 
 
-def process_lia(data, lia_off_x, lia_off_y, lia_phase, lia_off_re=0, lia_off_im=0):
-    data['gridx'] = data['x_raw'] - lia_off_x
-    data['gridy'] = data['y_raw'] - lia_off_y
-
-    # find true real and imagnary lock-in contributions based on a lia_phase argand rotation
-    th = np.radians(lia_phase)
-    data['lia_re'] = data['gridx']*np.cos(th) + data['gridy']*np.sin(th)
-    data['lia_im'] = -data['gridx']*np.sin(th) + data['gridy']*np.cos(th)
-
-    data['lia_re'] = data['lia_re'] - lia_off_re
-    data['lia_im'] = data['lia_im'] - lia_off_im
-
-    #find phase and amplitude of the lia signal
-    data['lia_ph'] = np.arctan2(data['lia_re'], data['lia_im'])
-    data['lia_r'] = np.sqrt(data['lia_re']**2 + data['lia_im']**2)
-
-
-    
-    return data
-
 
 def plot_lia(data):
     fig, ax = plt.subplots(1,4, figsize=(16, 6), facecolor='w', sharex=True, sharey=True)
@@ -109,14 +158,6 @@ def plot_lia(data):
     ax[2].set_title("Magnitude")
     ax[3].set_title("Phase")
     plt.show()
-
-
-def plot_lia_argand(data):
-	plt.plot(data['lia_re'], data['lia_im'])
-	plt.plot([0], [0], 'o')
-	plt.xlabel("X'")
-	plt.ylabel("Y'")
-	plt.show()
 
 
 
@@ -156,7 +197,7 @@ def fitSin(data, phase=50, showPlot=False):
 
 
 
-def fitXFMR(p, grid, delay, showPlots=False):
+def fitXFMROld(p, grid, delay, showPlots=False):
 
 	def sin(x, amp, phase, freq, offset):
 		return amp*np.sin(phase*2*np.pi/360.0 + ( x)/1000.0*freq*2*np.pi) + offset
@@ -197,7 +238,7 @@ def fitXFMR(p, grid, delay, showPlots=False):
 
 
 
-def fitXFMR2(data, p, showPlots=False):
+def fitXFMR(data, p, showPlots=False):
 
 	def sin(x, amp, phase, freq, offset):
 		return amp*np.sin(phase*2*np.pi/360.0 + ( x)/1000.0*freq*2*np.pi) + offset

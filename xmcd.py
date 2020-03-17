@@ -1,28 +1,49 @@
 import h5py
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+def correctEnergyShift(data):
+	#differentiate
+	#minimise the differential	
+	#correct for the shift
+	pass
 
 
 def loadXMCDList(directory, scans):
 	"""
-	Take a list of scan numbers, scans. 
-	Normalise all data by I0, interpolate energy onto a regular grid, average the scans in each list.
+	Take a list of scan numbers: scans,
+	Normalise all data by I0,
+	Interpolate energy onto a regular grid, 
+	Average the scans in each list.
 	"""
 	data = {}
-	egyStrings = ["egy_g_idu_circ_pos_energy", "egy_g_idu_circ_neg_energy", "egy_g_idd_circ_pos_energy", "egy_g_idd_circ_neg_energy"]
+	egyStrings = ["egy_g_idu_circ_pos_energy", "egy_g_idu_circ_neg_energy", "egy_g_idd_circ_pos_energy", "egy_g_idd_circ_neg_energy","egy_g_idu_lin_hor_energy","egy_g_idu_lin_ver_energy","egy_g_idd_lin_hor_energy","egy_g_idd_lin_ver_energy"]
 
 	data['m17'] = {}
 	data['m18'] = {}
 
+	data['raw'] = [None] * len(scans)
+	
+
 	mcsr17_grid = np.array([])
 	mcsr18_grid = np.array([])
-	for s in scans:
-		f = h5py.File(directory+"/i10-%06d.nxs" % (sA) ,'r')
+	for i, s in enumerate(scans):
+		f = h5py.File(directory+"/i10-%06d.nxs" % (s) ,'r')
 		grp = f['entry1']['instrument']
 
+		data['raw'][i] = {}
 		for egyStr in egyStrings:
 			if egyStr in grp:
 				energy = grp[egyStr]['demand'][:]
-				energyRaw = grp[egyStr]['pgm_energy'][:]
+				energyRaw = grp[egyStr]['pgm_energy'][:] 
+				data['raw'][i]['energy'] = grp[egyStr]['pgm_energy'][:] 
+
+		
+		
+		data['raw'][i]['macr16'] = grp['mcsr16_g']['data'][:]
+		data['raw'][i]['macr17'] = grp['mcsr17_g']['data'][:]
+		data['raw'][i]['macr18'] = grp['mcsr18_g']['data'][:]
 
 		mcsr17  = grp['mcsr17_g']['data'][:] / grp['mcsr16_g']['data'][:]
 		mcsr18  = grp['mcsr18_g']['data'][:] / grp['mcsr16_g']['data'][:]
@@ -55,6 +76,8 @@ def loadXMCD(directory, scansA, scansB):
 	dB = loadXMCDList(directory, scansB)
 
 	data = {}
+	data['raw_a'] = dA['raw']
+	data['raw_b'] = dB['raw']
 	data['energy'] = dA['energy']
 	data['m17'] = {'a':dA['m17'], 'b':dB['m17']}
 	data['m18'] = {'a':dA['m18'], 'b':dB['m18']}
@@ -76,7 +99,19 @@ def loadXMCD(directory, scansA, scansB):
 
 
 
+def plotXMCD(energy, a, b):
+	fig, ax = plt.subplots(2, 1, figsize=(6, 6), facecolor='w', sharex=True )
 
+	ax[0].plot(energy, a, 'r', label='a')
+	ax[0].plot(energy, b, 'b', label='b')
+	ax[1].plot(energy, a-b, 'k')
+
+	ax[0].legend(fontsize=10)
+	ax[1].set_xlabel("Energy (eV)")
+	ax[0].set_ylabel("XAS")
+	ax[1].set_ylabel("Difference")
+	#plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.25, wspace=0.35)
+	plt.show()
 
 
 
