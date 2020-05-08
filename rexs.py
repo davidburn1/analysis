@@ -2,9 +2,11 @@ import numpy as np
 import h5py
 from PIL import Image
 
+from ascii_data import loadI10Data
+
 import matplotlib.pyplot as plt
 
-def qgrid(E, cth, center_x=1024, center_y=1024):
+def qgrid(E, cth, center_x=0, center_y=0):
     """
     Energy E in eV
     returns q in 1/nm
@@ -20,17 +22,14 @@ def qgrid(E, cth, center_x=1024, center_y=1024):
     det_distance = 130e-3 # 130 mm for pimte
     px_size = 13.5e-6
 
-    px = (np.arange(2048)-1024+(1024-center_x))  #  pixels
-    py = (np.arange(2048)-1024+(1024-center_y)) #  pixels
-    #PX, PY = np.meshgrid(px,py)
+    px = (np.arange(2048)-1024+(center_x))  #  pixels
+    py = (np.arange(2048)-1024+(center_y)) #  pixels
     
     """ scattering angles where the beam exits from the sample """
     phi = np.arctan2(px * px_size , det_distance) # scattering angle phi
     th  = np.arctan2(py * px_size , det_distance)
     
     PHI, TH = np.meshgrid(phi,th)
-    
-
 
     th_i = np.radians(cth)
     TH_F = th_i + TH
@@ -58,25 +57,29 @@ def qgrid(E, cth, center_x=1024, center_y=1024):
 
 
 
-def phaseDiagram_tiff2hdf_fieldScan(directory, temperatures, fields, scanIDs):
+def phaseDiagram_tiff2hdf_fieldScan(directory, temperatures, fields, scanIDs, bins=4):
     """
     convert a phase diagram script into a single hdf file
     Assume the cth and ctth angles stays constant
     """
 
-    bins = 4
     grid = np.zeros((len(temperatures), len(fields), 2048//bins, 2048//bins))
 
 
     for i,s in enumerate(scanIDs):
 	    print i, s
-	    f = h5py.File(directory + 'i10-%06d.nxs' % s,'r')
-	    cth = f['entry1']['before_scan']['cth']['cth'][()]
-	    energy = f['entry1']['before_scan']['pgm_energy']['pgm_energy'][()]
-	    #ff = f['entry1']['instrument']['field']['field'][:]
-	    image_fns = f['entry1']['instrument']['pimtetiff']['data_file']['file_name']#[()]
+	    #f = h5py.File(directory + 'i10-%06d.nxs' % s,'r')
+	    #cth = f['entry1']['before_scan']['cth']['cth'][()]
+	    #energy = f['entry1']['before_scan']['pgm_energy']['pgm_energy'][()]
+	    #image_fns = f['entry1']['instrument']['pimtetiff']['data_file']['file_name']#[()]
+	    #f.close()
+	    data = loadI10Data(directory + 'i10-%06d.dat' % s)
+	    cth = 90 - float(data['metadata']['th'] )
+	    energy = float(data['metadata']['pgm_energy'])
+	    image_fns = [directory + "%06d-pimte-files/%05d.tif" % (s, int(x)) for x in data['path']]
+
 	    
-	    QX,QY = qgrid(energy, cth)
+	    QX,QY = qgrid(energy, cth, center_x=0, center_y=0)
 	    QX = QX.reshape(2048//bins, bins, 2048//bins, bins).mean(1).mean(2)
 	    QY = QY.reshape(2048//bins, bins, 2048//bins, bins).mean(1).mean(2)
 
@@ -88,10 +91,10 @@ def phaseDiagram_tiff2hdf_fieldScan(directory, temperatures, fields, scanIDs):
 		    del im
 
 
-            plt.pcolormesh(QX,QY, grid[i,j,:,:], cmap='gist_ncar_r', vmin=250, vmax=3000)
-            plt.show()
+            #plt.pcolormesh(QX,QY, grid[i,j,:,:], cmap='gist_ncar_r', vmin=250, vmax=3000)
+            #plt.show()
 
-	    f.close()
+	    
 
     return QX, QY, grid
 
@@ -99,7 +102,7 @@ def phaseDiagram_tiff2hdf_fieldScan(directory, temperatures, fields, scanIDs):
 
 
 
-def phaseDiagram_tiff2hdf_temperatureScans(directory, temperatures, fields, scanIDs):
+def phaseDiagram_tiff2hdf_temperatureScan(directory, temperatures, fields, scanIDs, bins=4):
     """
     convert a phase diagram script into a single hdf file
     Assume the cth and ctth angles stays constant
@@ -107,27 +110,32 @@ def phaseDiagram_tiff2hdf_temperatureScans(directory, temperatures, fields, scan
     interpolate the id numbers for the temperature id and read the closest image to the regular grid temperature
     """
 
-    bins = 4
     grid = np.zeros((len(temperatures), len(fields), 2048//bins, 2048//bins))
 
 
     for i,s in enumerate(scanIDs):
         print i, s
-        f = h5py.File(directory + 'i10-%06d.nxs' % s,'r')
-        cth = f['entry1']['before_scan']['cth']['cth'][()]
-        energy = f['entry1']['before_scan']['pgm_energy']['pgm_energy'][()]
-        #ff = f['entry1']['instrument']['field']['field'][:]
-        image_fns = f['entry1']['instrument']['pimtetiff']['data_file']['file_name'][()]
-        temperatures_raw = f['entry1']['instrument']['temperature']['sample'][()]
+        #f = h5py.File(directory + 'i10-%06d.nxs' % s,'r')
+        #cth = f['entry1']['before_scan']['cth']['cth'][()]
+        #energy = f['entry1']['before_scan']['pgm_energy']['pgm_energy'][()]
+        #image_fns = f['entry1']['instrument']['pimtetiff']['data_file']['file_name'][()]
+        #temperatures_raw = f['entry1']['instrument']['temperature']['sample'][()]
+	#f.close()
+	data = loadI10Data(directory + 'i10-%06d.dat' % s)
+	cth = 90 - float(data['metadata']['th'] )
+	energy = float(data['metadata']['pgm_energy'])
+	image_fns = [directory + "%06d-pimte-files/%05d.tif" % (s, int(x)) for x in data['path']]
+        temperatures_raw = data['Channel1Temp']
+
 	    
-        QX,QY = qgrid(energy, cth)
+        QX,QY = qgrid(energy, cth, center_x=0, center_y=0)
         QX = QX.reshape(2048//bins, bins, 2048//bins, bins).mean(1).mean(2)
         QY = QY.reshape(2048//bins, bins, 2048//bins, bins).mean(1).mean(2)
 
 
         argsort = np.argsort(temperatures_raw)
         temperatures_raw = temperatures_raw[argsort]
-        image_fns = image_fns[argsort]
+        image_fns = np.array(image_fns)[argsort]
 
         idmap =  np.interp(temperatures, temperatures_raw, np.arange(len(temperatures_raw)))
         idmap = np.round(idmap).astype(int)
@@ -139,7 +147,7 @@ def phaseDiagram_tiff2hdf_temperatureScans(directory, temperatures, fields, scan
             grid[j,i,:,:] = im
             del im
 
-        f.close()
+        
       
     return QX, QY, grid
 
