@@ -8,55 +8,6 @@ import h5py
 
 
 
-	
-
-def qgrid(E, cth):
-    """
-    Energy E in eV
-    q in 1/AA
-    cth = theta of sample
-
-    Qx = E/(hbar*c) * (np.cos(th_f)*np.cos(phi) - np.cos(th_i)) * 1e-9 
-    Qy = E/(hbar*c) * (np.cos(th_f)*np.sin(phi)) * 1e-9 
-    Qz = E/(hbar*c) * (np.sin(th_f) + np.sin(th_i)) * 1e-9 
-    """
-    
-    det_distance = 130e-3 # 130 mm for pimte
-    px_size = 13.5e-6
-
-    px = (np.arange(2048)-1024) + 0 #  pixels
-    py = (np.arange(2048)-1024) + 0 #  pixels
-    #PX, PY = np.meshgrid(px,py)
-    
-    """ scattering angles where the beam exits from the sample """
-    phi = np.arctan2(px * px_size , det_distance) # scattering angle phi
-    th  = np.arctan2(py * px_size , det_distance)
-    
-    PHI, TH = np.meshgrid(phi,th)
-    
-
-
-    th_i = np.radians(cth)
-    TH_F = th_i + TH
-
-    E = E * 1.6E-19 
-    hbar = 6.62e-34 / (2.0 * np.pi)
-    c = 3.0e8
-    """ convert scattering angles into Q """
-    #qy = E/(hbar*c) * (np.sin(PHI) ) * 1e-9   
-    #qx = E/(hbar*c) * (np.sin(TH) ) * 1e-9 
-    qx = E/(hbar*c) * (np.cos(TH_F)*np.cos(PHI) - np.cos(th_i)) * 1e-9 
-    qy = E/(hbar*c) * (np.cos(TH_F)*np.sin(PHI)) * 1e-9 
-
-    return [qy, qx]
-
-
-
-
-
-directory = "/dls/i10/data/2019/mm21868-1/"
-
-
 if (len(sys.argv) == 2):
 	id1 = int(sys.argv[1])
 	id2 = id1 + 1 
