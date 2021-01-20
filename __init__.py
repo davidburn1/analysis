@@ -1,5 +1,7 @@
 """
-Jython package used with GDA for Diamond Light Source
 
-This module left intentionally blank.
 """
+import src.xmcd as xmcd
+import src.xfmr as xfmr
+import src.poms as poms
+import src.rexs as rexs
