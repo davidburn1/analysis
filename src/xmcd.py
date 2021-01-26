@@ -18,11 +18,8 @@ def loadXMCDList(directory, scans):
 	Average the scans in each list.
 	"""
 	data = {}
-	egyStrings = ["egy_g_idu_circ_pos_energy", "egy_g_idu_circ_neg_energy", "egy_g_idd_circ_pos_energy", "egy_g_idd_circ_neg_energy","egy_g_idu_lin_hor_energy","egy_g_idu_lin_ver_energy","egy_g_idd_lin_hor_energy","egy_g_idd_lin_ver_energy"]
-
 	data['m17'] = {}
 	data['m18'] = {}
-
 	data['raw'] = [None] * len(scans)
 	
 
@@ -32,21 +29,17 @@ def loadXMCDList(directory, scans):
 		f = h5py.File(directory+"/i10-%06d.nxs" % (s) ,'r')
 		grp = f['entry1']['instrument']
 
+		energy = grp['energy']['demand'][:]
+		energyRaw = grp['energy']['pgm_energy'][:]
+
 		data['raw'][i] = {}
-		for egyStr in egyStrings:
-			if egyStr in grp:
-				energy = grp[egyStr]['demand'][:]
-				energyRaw = grp[egyStr]['pgm_energy'][:] 
-				data['raw'][i]['energy'] = grp[egyStr]['pgm_energy'][:] 
+		data['raw'][i]['energy'] = grp['energy']['pgm_energy'][:] 
+		data['raw'][i]['macr16'] = grp['mcs16']['data'][:]
+		data['raw'][i]['macr17'] = grp['mcs17']['data'][:]
+		data['raw'][i]['macr18'] = grp['mcs18']['data'][:]
 
-		
-		
-		data['raw'][i]['macr16'] = grp['mcsr16_g']['data'][:]
-		data['raw'][i]['macr17'] = grp['mcsr17_g']['data'][:]
-		data['raw'][i]['macr18'] = grp['mcsr18_g']['data'][:]
-
-		mcsr17  = grp['mcsr17_g']['data'][:] / grp['mcsr16_g']['data'][:]
-		mcsr18  = grp['mcsr18_g']['data'][:] / grp['mcsr16_g']['data'][:]
+		mcsr17  = grp['mcs17']['data'][:] / grp['mcs16']['data'][:]
+		mcsr18  = grp['mcs18']['data'][:] / grp['mcs16']['data'][:]
 		f.close()
 
 		# interpolate the energy to get the signal on a regular energy grid
