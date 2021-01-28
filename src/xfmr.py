@@ -9,7 +9,7 @@ def loadXFMRDelayScans(directory, scanIDs):
     """  """
     data = {}
 
-    # read the first file to get the length of the delay scan
+    # read the first file to get the length of the scan and the delay values
     f = h5py.File(directory+"/i10-%06d.nxs" % scanIDs[0], 'r')
     grp = f['entry1']['instrument']
     data['delay'] = grp['delay']['delay'][:]
@@ -20,6 +20,7 @@ def loadXFMRDelayScans(directory, scanIDs):
     data['y'] = np.zeros((len(data['field']), len(data['delay'])))
     data['static'] = np.zeros((len(data['field']), len(data['delay'])))
 
+    # Loop through all the scans in the list
     for i in range(len(scanIDs)):
         f = h5py.File(directory+"/i10-%06d.nxs" % scanIDs[i], 'r')
         data['field'][i] =  f['entry1']['before_scan']['vmag']['field'][()]
@@ -32,13 +33,11 @@ def loadXFMRDelayScans(directory, scanIDs):
         f.close()
 
     # sort the data by field value
-    # argsort = np.argsort(data['field'])
-    # print(argsort)
-    # data['field'] = data['field'][argsort]
-    # data['grid'] = data['grid'][argsort]
-    #data['static'] = data['static'][argsort,:]
-    #data['x'] = data['x'][argsort,:]
-    #data['y'] = data['y'][argsort,:]
+    argsort = np.argsort(data['field'])
+    data['field'] = data['field'][argsort]
+    data['static'] = data['static'][argsort,:]
+    data['x'] = data['x'][argsort,:]
+    data['y'] = data['y'][argsort,:]
 
 
     # show error if one of the files does not have the correct length
@@ -48,7 +47,7 @@ def loadXFMRDelayScans(directory, scanIDs):
 
 
 
-def fitXFMR(data, params, showPlots=False):
+def fitXFMR(data, params, showPlots=False, ignoreStart=0):
 
     def sin(x, amp, phase, freq, offset):
         return amp*np.sin(phase*np.pi/180.0 + x/1000.0*freq*2*np.pi) + offset
@@ -57,10 +56,10 @@ def fitXFMR(data, params, showPlots=False):
     fitparams = []
         
     for i in range(len(data['field'])):
-        #result = mod.fit(data['x'][i,:], p, x=data['delay'], method='nelder')
-        x = data['delay']
-        y = data['x'][i,:]
-        fit = mod.fit(y, params, x=x)
+        x = data['delay'][ignoreStart:]
+        y = data['x'][i,ignoreStart:]
+        fit = mod.fit(y, params, x=x, method='nelder')
+        fit = mod.fit(y, fit.params, x=x)
 
         if showPlots:
             plt.plot(x, fit.init_fit, 'k--')
@@ -78,6 +77,7 @@ def fitXFMR(data, params, showPlots=False):
     data['phase'] = np.array([g['phase'] for  g in fitparams])
     data['freq'] = np.array([g['freq'] for  g in fitparams])
     data['offset'] = np.array([g['offset'] for  g in fitparams])
+
     data['amp_stderr'] = np.array([g['amp_stderr'] for  g in fitparams])
     data['phase_stderr'] = np.array([g['phase_stderr'] for  g in fitparams])
 

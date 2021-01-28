@@ -1,4 +1,0 @@
-git remote add upstream https://github.com/davidburn1/analysis.git
-
-git fetch upstream (sync local with the upstream)
-git merge upstream/master   (perform the merge)

@@ -31,3 +31,24 @@ The projection of the magnetization is measured as a function of a variable dela
 In REXS experiments, the magnetic ordering in a sample is probed in an x-ray scattering geometry. Ordered magnetic structures give rise to additional scattering peaks in addition to structural scattering peaks. REXS measurements are commonly used to explore the phase diagrams of topologically rich chiral magnetic materials to identify phases such as helical, conical and skyrmion ordering. 
 
 The codes here are useful for converting the images collected on an x-ray sensitive CCD camera into peak locations in reciprocol space. They also help with the visualization of the data through the construction of movies, and arrangement of the data into phase diagrams.
+
+
+
+# Usage
+
+To download a copy of the code:
+    git clone https://github.com/davidburn1/analysis.git
+
+To upload any changes:
+    git add .
+    git commit -m "message"
+    git push -f origin master
+
+
+
+git remote add upstream https://github.com/davidburn1/analysis.git
+git fetch upstream (sync local with the upstream)
+git merge upstream/master   (perform the merge)
+
+
+
