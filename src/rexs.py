@@ -48,6 +48,35 @@ def qgrid(E, cth, center_x=0, center_y=0):
 
 
 
+from scipy.interpolate import griddata
+
+# Convert an image with QX, QY coordinates into polar with R, TH coordinates
+def toPolar(R, TH, QX, QY, im, xShift=0, yShift=0):
+    # Calculate R,TH values for each pixel in Q space
+    R_irregular = np.sqrt(QX**2 + QY**2)
+    TH_irregular = np.arctan2(QX,QY) + np.pi
+    
+    bins = [np.append([-1],R[0,:]), np.append([-1],TH[:,0])]
+    
+    statistic, xedges, yedges, binnumber = stats.binned_statistic_2d(R_irregular.ravel(), TH_irregular.ravel(), values=im.ravel(), statistic='mean', bins=bins, expand_binnumbers=True)
+
+    im_polar = statistic.T
+
+    # fill in nan values by interpolation, row by row
+    for i in range(1, np.shape(im_polar)[1], 1):
+        # find indexes where the conversion resulted in a nan value
+        bad_indexes = np.isnan(im_polar[:,i])
+        
+        # find the indexes, and the data which is not a nan value
+        good_indexes = np.logical_not(bad_indexes)
+        good_data = im_polar[:,i][good_indexes]
+
+        # interpolate the good data to fill in the missing data points
+        interpolated = np.interp(bad_indexes.nonzero()[0], good_indexes.nonzero()[0], good_data)
+
+        im_polar[:,i][bad_indexes] = interpolated
+
+    return im_polar
 
 
 
