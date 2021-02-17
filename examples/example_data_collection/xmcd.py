@@ -18,3 +18,15 @@ pos vmag 400
 fescan(840, 880)
 pos vmag -400
 fescan(840, 880)
+
+#Cu
+pos vmag 400
+fescan(920, 965)
+pos vmag -400
+fescan(920, 965)
+
+#Mn
+pos vmag 400
+fescan(620, 670)
+pos vmag -400
+fescan(620, 670)
