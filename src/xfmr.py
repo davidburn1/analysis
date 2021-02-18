@@ -15,6 +15,7 @@ def loadXFMRDelayScans(directory, scanIDs):
     data['delay'] = grp['delay']['delay'][:]
     f.close()
 
+    data['scanID'] = np.array(scanIDs)
     data['field'] = np.zeros((len(scanIDs)))
     data['x'] = np.zeros((len(data['field']), len(data['delay'])))
     data['y'] = np.zeros((len(data['field']), len(data['delay'])))
@@ -34,6 +35,7 @@ def loadXFMRDelayScans(directory, scanIDs):
 
     # sort the data by field value
     argsort = np.argsort(data['field'])
+    data['scanID'] = data['scanID'][argsort]
     data['field'] = data['field'][argsort]
     data['static'] = data['static'][argsort,:]
     data['x'] = data['x'][argsort,:]
@@ -65,6 +67,7 @@ def fitXFMR(data, params, showPlots=False, ignoreStart=0):
             plt.plot(x, fit.init_fit, 'k--')
             plt.plot(x, fit.best_fit, 'r-')
             plt.plot(x, y, '.')
+            plt.title(data['scanID'][i])
             plt.show()
 
         valuesdict = fit.params.valuesdict() 
