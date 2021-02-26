@@ -1,10 +1,10 @@
 def MH():
     fields = dnp.arange(20, 5, -5).tolist()
     fields = fields + dnp.arange(5, -5, -0.1).tolist()
-    fields = fields + dnp.arange(-5, -20, -5).tolist()
-    fields = tuple(fields)
-    scan vmag fields refl 0.1
-    scan vmag fields[::-1] refl 0.1
+    fields = fields + dnp.arange(-5, -21, -5).tolist()
+    pos vmag fields[0]; time.sleep(2)
+    scan vmag tuple(dnp.array(fields)) refl 0.1
+    scan vmag tuple(-dnp.array(fields)) refl 0.1
     pos vmag 0
 
 pos pol pc
