@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import pandas as pd
 
 
 
@@ -87,7 +88,10 @@ def loadXMCD(directory, scansA, scansB):
 	return data
 
 
-
+def saveXMCDdat(filename, data):
+    d2 = {'energy':data['energy'], 'a':data['m17']['a'], 'b':data['m17']['b']}
+    df = pd.DataFrame(d2)
+    df.to_csv(filename, index=False)
 
 
 # analyse collections of XMCD scans
