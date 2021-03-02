@@ -1,6 +1,62 @@
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
+import os
+
+
+
+
+
+
+
+def nexus2dat(nexusDirectory, datDirectory ):
+
+    for file in os.listdir(nexusDirectory):
+        print(file)
+
+        f = h5py.File(nexusDirectory + "/" + file, 'r')
+        scanDimensions = int(f['entry1']['scan_dimensions'][()])
+        
+        grp = f['entry1']['instrument']
+        columns = []    
+        data = np.array([])
+        
+        for c in [key for key in grp.keys()]:
+            if (isinstance(grp[c], h5py.Dataset)):
+                if (grp[c].shape != (scanDimensions,)): continue
+                data = np.append(data, grp[c][()])
+                columns = columns + [c]
+            elif (isinstance(grp[c], h5py.Group)):
+                
+                for cc in [key for key in grp[c].keys()]:
+                    if (isinstance(grp[c][cc], h5py.Dataset)):
+                        if (grp[c][cc].shape != (scanDimensions,)): continue
+                        data = np.append(data, grp[c][cc][()])
+                        columns = columns + [c+"_"+cc]
+                    elif (isinstance(grp[c], h5py.Group)):
+                        pass
+                    else:
+                        pass
+            else:
+                pass
+          
+        f.close()
+        
+        data = data.reshape( (data.shape[0]//scanDimensions), scanDimensions,)  
+            
+        f = open(datDirectory+ "/" + file.split(".")[0] + ".dat", "w")
+        f.write(','.join(columns) + "\n")
+        np.savetxt(f, data.T, delimiter=',', fmt="%.5g")   # X is an array
+        f.close()
+
+
+
+
+
+
+
+
+
 
 def loadSampleAlignmentData(directory, scans):
     # Input a list of scans of user1_axis2 at different user1_axis1 positions

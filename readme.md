@@ -44,6 +44,9 @@ To upload any changes:
     git commit -m "message"
     git push -f origin master
 
+To download any changes:
+    git pull
+
 
 
 git remote add upstream https://github.com/davidburn1/analysis.git
