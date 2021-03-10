@@ -91,7 +91,7 @@ def loadXMCD(directory, scansA, scansB):
 def saveXMCDdat(filename, data):
     d2 = {'energy':data['energy'], 'a':data['m17']['a'], 'b':data['m17']['b']}
     df = pd.DataFrame(d2)
-    df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False, header=True, columns=["energy","a","b"])
 
 
 # analyse collections of XMCD scans

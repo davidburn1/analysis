@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import pandas as pd
 from lmfit import minimize, Parameters, fit_report, Model
 import matplotlib.pyplot as plt
 
@@ -85,5 +86,15 @@ def fitXFMR(data, params, showPlots=False, ignoreStart=0):
     data['phase_stderr'] = np.array([g['phase_stderr'] for  g in fitparams])
 
 
+
+
+def saveXFMRdat(filename, data):
+    keys = ['scanID','field','amp', 'amp_stderr', 'phase', 'phase_stderr', 'offset', 'freq']
+    #, , , , 'static', , 'y', 'x']
+    d2 = {}
+    for k in keys:
+        d2[k] = data[k]
+    df = pd.DataFrame(d2)
+    df.to_csv(filename, index=False, header=True, columns=keys)
 
 
